@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>元素記号 ブリッツクイズ（周期表 120秒）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 min-h-screen text-white">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-1 text-cyan-300">元素記号 ブリッツクイズ</h1>
+    <p class="text-slate-400 mb-4 text-sm">120秒間で元素名⇄記号を何問正解できるか？全118元素収録</p>
+
+    <!-- Start screen -->
+    <div id="startScreen">
+      <div class="bg-slate-800 rounded-2xl p-6 mb-4">
+        <p class="text-sm text-slate-300 mb-3">出題設定</p>
+        <div class="flex gap-3 flex-wrap mb-3">
+          <button onclick="setDir('name2sym')" id="btnN2S" aria-label="元素名から記号" class="px-3 py-2 text-sm font-semibold rounded-lg bg-cyan-600 text-white">名前→記号</button>
+          <button onclick="setDir('sym2name')" id="btnS2N" aria-label="記号から元素名" class="px-3 py-2 text-sm font-semibold rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600">記号→名前</button>
+          <button onclick="setDir('both')" id="btnBoth" aria-label="両方ランダム" class="px-3 py-2 text-sm font-semibold rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600">両方</button>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">族フィルタ</p>
+        <div class="flex gap-2 flex-wrap text-xs">
+          <button onclick="setGroup('all')" id="grp-all" aria-label="全族" class="px-2 py-1 rounded bg-cyan-600 text-white font-semibold">全て</button>
+          <button onclick="setGroup('alkali')" id="grp-alkali" aria-label="アルカリ金属" class="px-2 py-1 rounded bg-slate-700 text-slate-300 hover:bg-slate-600">アルカリ金属</button>
+          <button onclick="setGroup('halogen')" id="grp-halogen" aria-label="ハロゲン" class="px-2 py-1 rounded bg-slate-700 text-slate-300 hover:bg-slate-600">ハロゲン</button>
+          <button onclick="setGroup('noble')" id="grp-noble" aria-label="希ガス" class="px-2 py-1 rounded bg-slate-700 text-slate-300 hover:bg-slate-600">希ガス</button>
+          <button onclick="setGroup('transition')" id="grp-transition" aria-label="遷移金属" class="px-2 py-1 rounded bg-slate-700 text-slate-300 hover:bg-slate-600">遷移金属</button>
+        </div>
+      </div>
+      <div class="bg-slate-800 rounded-2xl p-4 mb-4 text-sm text-slate-300">
+        <span class="font-bold text-cyan-300">自己ベスト: </span><span id="bestScore">—</span>問
+      </div>
+      <button onclick="startGame()" aria-label="ゲームスタート" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-4 rounded-2xl text-lg transition">スタート！</button>
+    </div>
+
+    <!-- Game screen -->
+    <div id="gameScreen" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-4xl font-bold font-mono text-cyan-300" id="timerDisp">120</div>
+        <div class="text-right">
+          <p class="text-xs text-slate-400">正解</p>
+          <p class="text-2xl font-bold text-emerald-400" id="correctDisp">0</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-slate-400">不正解</p>
+          <p class="text-2xl font-bold text-red-400" id="wrongDisp">0</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-800 rounded-2xl p-8 mb-4 text-center">
+        <p class="text-xs text-slate-400 mb-2" id="qType"></p>
+        <p class="text-4xl font-bold text-white mb-6" id="qText"></p>
+        <div id="answerChoices" class="grid grid-cols-2 gap-3"></div>
+      </div>
+
+      <div id="inlineFeedback" class="h-6 text-center text-sm font-semibold"></div>
+    </div>
+
+    <!-- Result screen -->
+    <div id="resultScreen" class="hidden bg-slate-800 rounded-2xl p-8 text-center">
+      <p class="text-5xl mb-3">⚡</p>
+      <h2 class="text-2xl font-bold mb-2">タイムアップ！</h2>
+      <p id="resultText" class="text-lg text-slate-300 mb-4"></p>
+      <p id="newBest" class="text-cyan-300 font-bold mb-6 text-lg hidden">🏆 新記録！</p>
+      <button onclick="showStart()" aria-label="スタート画面へ戻る" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-8 py-3 rounded-xl transition">もう一度</button>
+    </div>
+  </div>
+
+  <script>
+    const elements = [
+      {n:1,sym:'H',name:'水素',group:'other'},{n:2,sym:'He',name:'ヘリウム',group:'noble'},{n:3,sym:'Li',name:'リチウム',group:'alkali'},
+      {n:4,sym:'Be',name:'ベリリウム',group:'other'},{n:5,sym:'B',name:'ホウ素',group:'other'},{n:6,sym:'C',name:'炭素',group:'other'},
+      {n:7,sym:'N',name:'窒素',group:'other'},{n:8,sym:'O',name:'酸素',group:'other'},{n:9,sym:'F',name:'フッ素',group:'halogen'},
+      {n:10,sym:'Ne',name:'ネオン',group:'noble'},{n:11,sym:'Na',name:'ナトリウム',group:'alkali'},{n:12,sym:'Mg',name:'マグネシウム',group:'other'},
+      {n:13,sym:'Al',name:'アルミニウム',group:'other'},{n:14,sym:'Si',name:'ケイ素',group:'other'},{n:15,sym:'P',name:'リン',group:'other'},
+      {n:16,sym:'S',name:'硫黄',group:'other'},{n:17,sym:'Cl',name:'塩素',group:'halogen'},{n:18,sym:'Ar',name:'アルゴン',group:'noble'},
+      {n:19,sym:'K',name:'カリウム',group:'alkali'},{n:20,sym:'Ca',name:'カルシウム',group:'other'},{n:21,sym:'Sc',name:'スカンジウム',group:'transition'},
+      {n:22,sym:'Ti',name:'チタン',group:'transition'},{n:23,sym:'V',name:'バナジウム',group:'transition'},{n:24,sym:'Cr',name:'クロム',group:'transition'},
+      {n:25,sym:'Mn',name:'マンガン',group:'transition'},{n:26,sym:'Fe',name:'鉄',group:'transition'},{n:27,sym:'Co',name:'コバルト',group:'transition'},
+      {n:28,sym:'Ni',name:'ニッケル',group:'transition'},{n:29,sym:'Cu',name:'銅',group:'transition'},{n:30,sym:'Zn',name:'亜鉛',group:'transition'},
+      {n:31,sym:'Ga',name:'ガリウム',group:'other'},{n:32,sym:'Ge',name:'ゲルマニウム',group:'other'},{n:33,sym:'As',name:'ヒ素',group:'other'},
+      {n:34,sym:'Se',name:'セレン',group:'other'},{n:35,sym:'Br',name:'臭素',group:'halogen'},{n:36,sym:'Kr',name:'クリプトン',group:'noble'},
+      {n:37,sym:'Rb',name:'ルビジウム',group:'alkali'},{n:38,sym:'Sr',name:'ストロンチウム',group:'other'},{n:39,sym:'Y',name:'イットリウム',group:'transition'},
+      {n:40,sym:'Zr',name:'ジルコニウム',group:'transition'},{n:41,sym:'Nb',name:'ニオブ',group:'transition'},{n:42,sym:'Mo',name:'モリブデン',group:'transition'},
+      {n:43,sym:'Tc',name:'テクネチウム',group:'transition'},{n:44,sym:'Ru',name:'ルテニウム',group:'transition'},{n:45,sym:'Rh',name:'ロジウム',group:'transition'},
+      {n:46,sym:'Pd',name:'パラジウム',group:'transition'},{n:47,sym:'Ag',name:'銀',group:'transition'},{n:48,sym:'Cd',name:'カドミウム',group:'transition'},
+      {n:49,sym:'In',name:'インジウム',group:'other'},{n:50,sym:'Sn',name:'スズ',group:'other'},{n:51,sym:'Sb',name:'アンチモン',group:'other'},
+      {n:52,sym:'Te',name:'テルル',group:'other'},{n:53,sym:'I',name:'ヨウ素',group:'halogen'},{n:54,sym:'Xe',name:'キセノン',group:'noble'},
+      {n:55,sym:'Cs',name:'セシウム',group:'alkali'},{n:56,sym:'Ba',name:'バリウム',group:'other'},{n:57,sym:'La',name:'ランタン',group:'other'},
+      {n:58,sym:'Ce',name:'セリウム',group:'other'},{n:59,sym:'Pr',name:'プラセオジム',group:'other'},{n:60,sym:'Nd',name:'ネオジム',group:'other'},
+      {n:61,sym:'Pm',name:'プロメチウム',group:'other'},{n:62,sym:'Sm',name:'サマリウム',group:'other'},{n:63,sym:'Eu',name:'ユウロピウム',group:'other'},
+      {n:64,sym:'Gd',name:'ガドリニウム',group:'other'},{n:65,sym:'Tb',name:'テルビウム',group:'other'},{n:66,sym:'Dy',name:'ジスプロシウム',group:'other'},
+      {n:67,sym:'Ho',name:'ホルミウム',group:'other'},{n:68,sym:'Er',name:'エルビウム',group:'other'},{n:69,sym:'Tm',name:'ツリウム',group:'other'},
+      {n:70,sym:'Yb',name:'イッテルビウム',group:'other'},{n:71,sym:'Lu',name:'ルテチウム',group:'other'},{n:72,sym:'Hf',name:'ハフニウム',group:'transition'},
+      {n:73,sym:'Ta',name:'タンタル',group:'transition'},{n:74,sym:'W',name:'タングステン',group:'transition'},{n:75,sym:'Re',name:'レニウム',group:'transition'},
+      {n:76,sym:'Os',name:'オスミウム',group:'transition'},{n:77,sym:'Ir',name:'イリジウム',group:'transition'},{n:78,sym:'Pt',name:'白金',group:'transition'},
+      {n:79,sym:'Au',name:'金',group:'transition'},{n:80,sym:'Hg',name:'水銀',group:'transition'},{n:81,sym:'Tl',name:'タリウム',group:'other'},
+      {n:82,sym:'Pb',name:'鉛',group:'other'},{n:83,sym:'Bi',name:'ビスマス',group:'other'},{n:84,sym:'Po',name:'ポロニウム',group:'other'},
+      {n:85,sym:'At',name:'アスタチン',group:'halogen'},{n:86,sym:'Rn',name:'ラドン',group:'noble'},{n:87,sym:'Fr',name:'フランシウム',group:'alkali'},
+      {n:88,sym:'Ra',name:'ラジウム',group:'other'},{n:89,sym:'Ac',name:'アクチニウム',group:'other'},{n:90,sym:'Th',name:'トリウム',group:'other'},
+      {n:91,sym:'Pa',name:'プロトアクチニウム',group:'other'},{n:92,sym:'U',name:'ウラン',group:'other'},{n:93,sym:'Np',name:'ネプツニウム',group:'other'},
+      {n:94,sym:'Pu',name:'プルトニウム',group:'other'},{n:95,sym:'Am',name:'アメリシウム',group:'other'},{n:96,sym:'Cm',name:'キュリウム',group:'other'},
+      {n:97,sym:'Bk',name:'バークリウム',group:'other'},{n:98,sym:'Cf',name:'カリホルニウム',group:'other'},{n:99,sym:'Es',name:'アインスタイニウム',group:'other'},
+      {n:100,sym:'Fm',name:'フェルミウム',group:'other'},{n:101,sym:'Md',name:'メンデレビウム',group:'other'},{n:102,sym:'No',name:'ノーベリウム',group:'other'},
+      {n:103,sym:'Lr',name:'ローレンシウム',group:'other'},{n:104,sym:'Rf',name:'ラザホージウム',group:'transition'},{n:105,sym:'Db',name:'ドブニウム',group:'transition'},
+      {n:106,sym:'Sg',name:'シーボーギウム',group:'transition'},{n:107,sym:'Bh',name:'ボーリウム',group:'transition'},{n:108,sym:'Hs',name:'ハッシウム',group:'transition'},
+      {n:109,sym:'Mt',name:'マイトネリウム',group:'transition'},{n:110,sym:'Ds',name:'ダームスタチウム',group:'transition'},{n:111,sym:'Rg',name:'レントゲニウム',group:'transition'},
+      {n:112,sym:'Cn',name:'コペルニシウム',group:'transition'},{n:113,sym:'Nh',name:'ニホニウム',group:'other'},{n:114,sym:'Fl',name:'フレロビウム',group:'other'},
+      {n:115,sym:'Mc',name:'モスコビウム',group:'other'},{n:116,sym:'Lv',name:'リバモリウム',group:'other'},{n:117,sym:'Ts',name:'テネシン',group:'halogen'},
+      {n:118,sym:'Og',name:'オガネソン',group:'noble'},
+    ];
+
+    let direction = 'name2sym', groupFilter = 'all';
+    let pool = [], qIdx = 0, correct = 0, wrong = 0, timer = 120, interval = null;
+
+    function setDir(d) {
+      direction = d;
+      ['N2S','S2N','Both'].forEach(id => {
+        document.getElementById('btn'+id).className = 'px-3 py-2 text-sm font-semibold rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600';
+      });
+      const map = {name2sym:'N2S', sym2name:'S2N', both:'Both'};
+      document.getElementById('btn'+map[d]).className = 'px-3 py-2 text-sm font-semibold rounded-lg bg-cyan-600 text-white';
+    }
+
+    function setGroup(g) {
+      groupFilter = g;
+      ['all','alkali','halogen','noble','transition'].forEach(id => {
+        document.getElementById('grp-'+id).className = 'px-2 py-1 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs';
+      });
+      document.getElementById('grp-'+g).className = 'px-2 py-1 rounded bg-cyan-600 text-white font-semibold text-xs';
+    }
+
+    function shuffle(arr) {
+      const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a;
+    }
+
+    function getBest() { return parseInt(localStorage.getItem('element_best') || '0'); }
+    function setBest(n) { localStorage.setItem('element_best', n); }
+
+    function showStart() {
+      document.getElementById('startScreen').classList.remove('hidden');
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.add('hidden');
+      const b = getBest();
+      document.getElementById('bestScore').textContent = b > 0 ? b : '—';
+    }
+
+    function startGame() {
+      const filtered = groupFilter === 'all' ? elements : elements.filter(e => e.group === groupFilter);
+      if (filtered.length < 4) { alert('元素が少なすぎます'); return; }
+      pool = shuffle(filtered);
+      qIdx = 0; correct = 0; wrong = 0; timer = 120;
+
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('gameScreen').classList.remove('hidden');
+      document.getElementById('resultScreen').classList.add('hidden');
+      document.getElementById('correctDisp').textContent = '0';
+      document.getElementById('wrongDisp').textContent = '0';
+
+      showQ();
+      interval = setInterval(() => {
+        timer--;
+        document.getElementById('timerDisp').textContent = timer;
+        if (timer <= 0) { clearInterval(interval); showResult(); }
+      }, 1000);
+    }
+
+    function showQ() {
+      if (qIdx >= pool.length) { pool = shuffle(pool); qIdx = 0; }
+      const el = pool[qIdx];
+      const dir = direction === 'both' ? (Math.random() > 0.5 ? 'name2sym' : 'sym2name') : direction;
+      const isN2S = dir === 'name2sym';
+
+      document.getElementById('qType').textContent = isN2S ? '元素名 → 記号を選べ' : '記号 → 元素名を選べ';
+      document.getElementById('qText').textContent = isN2S ? el.name : el.sym;
+
+      const correctAns = isN2S ? el.sym : el.name;
+      const pool2 = shuffle(elements.filter(e => e.sym !== el.sym));
+      const wrongOpts = pool2.slice(0,3).map(e => isN2S ? e.sym : e.name);
+      const opts = shuffle([correctAns, ...wrongOpts]);
+
+      const container = document.getElementById('answerChoices');
+      container.innerHTML = '';
+      opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'px-4 py-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-xl text-sm font-bold transition';
+        btn.setAttribute('aria-label', opt);
+        btn.textContent = opt;
+        btn.addEventListener('click', () => checkAnswer(btn, opt, correctAns, opts, container));
+        container.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(btn, chosen, correctAns, opts, container) {
+      const isOk = chosen === correctAns;
+      if (isOk) correct++; else wrong++;
+      document.getElementById('correctDisp').textContent = correct;
+      document.getElementById('wrongDisp').textContent = wrong;
+
+      container.querySelectorAll('button').forEach(b => {
+        b.disabled = true;
+        if (b.textContent === correctAns) b.className = 'px-4 py-3 bg-emerald-700 border border-emerald-400 rounded-xl text-sm font-bold';
+        else if (b.textContent === chosen && !isOk) b.className = 'px-4 py-3 bg-red-800 border border-red-400 rounded-xl text-sm font-bold';
+      });
+
+      const fb = document.getElementById('inlineFeedback');
+      fb.textContent = isOk ? '✅ 正解！' : `❌ 不正解 → ${correctAns}`;
+      fb.className = `h-6 text-center text-sm font-semibold ${isOk ? 'text-emerald-400' : 'text-red-400'}`;
+
+      setTimeout(() => { qIdx++; showQ(); fb.textContent = ''; }, 700);
+    }
+
+    function showResult() {
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.remove('hidden');
+      document.getElementById('resultText').textContent = `正解 ${correct} 問 / 不正解 ${wrong} 問`;
+      const best = getBest();
+      if (correct > best) { setBest(correct); document.getElementById('newBest').classList.remove('hidden'); }
+      else document.getElementById('newBest').classList.add('hidden');
+    }
+
+    showStart();
+  </script>
+</body>
+</html>
